@@ -1,0 +1,52 @@
+version: '3.7'
+
+services:
+  web:
+    container_name: disp_web
+    build: .
+    command: sh -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/web:cached
+      - bundler_cache:/usr/local/bundle:cached
+    ports:
+      - 3000:3000
+    env_file: .env
+    depends_on:
+      - db
+    networks:
+      - default
+
+  rpc:
+    container_name: disp_rpc
+    image: disp_web:latest
+    command: bundle exec gruf
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/web:cached
+      - bundler_cache:/usr/local/bundle:cached
+    ports:
+      - 50051:50051
+    env_file: .env
+    depends_on:
+      - db
+    networks:
+      - default
+
+  db:
+    container_name: disp_db
+    image: postgres:12-alpine
+    ports:
+      - 5433:5432
+    env_file: .env
+    volumes:
+      - .:/web:cached
+      - db-data:/var/lib/postgresql/data:cached
+    networks:
+      - default
+
+volumes:
+  bundler_cache:
+  db-data:
